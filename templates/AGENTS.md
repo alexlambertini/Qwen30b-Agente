@@ -16,3 +16,6 @@ Antes de decidir, consulte os arquivos relevantes se existirem: `architecture.md
 
 ## Pesquisa tecnica por necessidade
 Nivel 1 (padrao ja conhecido do projeto): nao pesquisar. Nivel 2 (API/erro desconhecido): pesquisar. Nivel 3 (dependencias, versoes, config de ferramentas, APIs externas): pesquisa obrigatoria. Priorize documentacao oficial; registre URL, versao, o confirmado e as duvidas. Documentacao nao substitui teste.
+
+## Ferramentas
+- `execute` e um sandbox JavaScript sem `require`/fs/glob: use-o apenas para chamar ferramentas MCP (ex.: Context7). Para arquivos use read/glob/grep/edit/write; para comandos use shell (quando permitido).

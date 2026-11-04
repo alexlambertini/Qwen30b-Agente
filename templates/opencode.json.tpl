@@ -140,7 +140,7 @@
     "feature": {
       "description": "Passo 1 do workflow: investigar e planejar (somente leitura)",
       "agent": "plan",
-      "template": "Planeje a seguinte demanda e pare para aprovacao: $ARGUMENTS\n\nSiga o formato de entrega do seu prompt. Termine com 'Autoriza a execucao pelo Build?'."
+      "template": "Planeje a seguinte demanda e pare para aprovacao: $ARGUMENTS\n\nPrimeiro faca o Passo 0 do seu prompt (projeto existente ou novo). Se for projeto NOVO, projete (requisitos, stack, arquitetura em camadas, modelagem com checklist de entidades transversais, estrutura de diretorios, etapas); nao procure o que 'atualizar'. Siga o formato de entrega e termine com 'Autoriza a execucao pelo Build?'."
     },
     "implement": {
       "description": "Passo 2: executar o plano aprovado (Build)",

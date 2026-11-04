@@ -45,3 +45,8 @@ Nao criados: Scout (nao existe), Architect/Debugger/Tester/Researcher (ver `05`)
 
 ## Veredito
 Restricoes de permissao: **aprovadas com as ressalvas acima** (nenhuma falha critica aberta). Qualidade de execucao dos agentes: **limitada pelo modelo**; nao considere o fluxo autonomo sem revisao humana. Modulo de ferramentas: **pendente de autorizacao**.
+
+## Correcao pos-uso (2026-11-04, a partir de teste real do usuario)
+- Problema: em pasta VAZIA o Plan dizia "analisar o projeto existente" e gastava passos (inclusive `execute` com `require`); o plano de projeto novo saia generico (MVC `models/controllers/views/utils`) e sem entidades transversais (auditoria, localizacao, fornecedor, compatibilidade de firmware, papeis/permissoes).
+- Correcao no `plan.md`: Passo 0 (existente x novo) + Modo projeto novo com GABARITO obrigatorio (requisitos; 4 camadas com regra de dependencia e arvore; tabela de entidades com "tabela propria?"; checklist de 9 itens transversais com Incluir/Descartar + justificativa; enums/integridade; autoverificacao).
+- Reteste (demanda ISP roteadores/ONUs, FastAPI+SQLite, pasta vazia, 1 execucao): detectou projeto novo (`ls -A`), arvore em `domain/application/infrastructure/presentation` + `tests/{unit,integration,e2e}`, sem `models/controllers/views/utils` na raiz, checklist com as 9 linhas. Limites observados: decisoes ainda rasas (ex.: "Fornecedor: Descartar - nao mencionado"), auditoria mapeada em entidades existentes em vez de AuditLog proprio. Foi 1 execucao: NAO e garantia estatistica.
