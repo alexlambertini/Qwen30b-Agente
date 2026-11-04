@@ -22,10 +22,12 @@ A chave e testada no servidor antes de gravar; a config anterior vai para `~/.co
 | `reviewer` | revisao independente | sem edicao e sem bash |
 | `explore` (nativo) | busca | sem edicao e sem bash (inclusive quando chamado por outro agente) |
 
-Tambem: `AGENTS.md` global, `prompts/`, `memory-template/` e o comando `qwen-agente-init` (cria `.opencode/memory/` no projeto: architecture, conventions, known-issues, decisions/, tasks/).
+Tambem: `AGENTS.md` global, `prompts/` completos (fluxo, limites, criterios de conclusao, formato de entrega, niveis de pesquisa), `memory-template/` e o comando `qwen-agente-init`, que cria `.opencode/memory/` no projeto (architecture, conventions, known-issues, decisions/, tasks/). A memoria do projeto e carregada automaticamente (`instructions`).
+
+Plan e Reviewer so podem delegar ao `explore` (delegar ao `general` foi uma brecha real, corrigida: ver `reports/02`).
 
 ## Testar as permissoes
-`tests/permissions.sh` (usa o servidor de verdade). Relatorios em `reports/`.
+`tests/permissions.sh` (usa o servidor de verdade). Relatorios em `reports/` (00 auditoria · 01 permissoes · 02 testes · 03 pesquisa · 04 memoria · 05 agentes · 06 inventario de ferramentas · FINAL-VALIDATION).
 
 ## Importante
 Neste OpenCode, um `permission: { edit: allow }` **global** e aplicado *depois* da regra de cada agente e anularia o `plan` somente leitura. Por isso o `opencode.json` aqui nao tem allow global; restricoes ficam por agente.
