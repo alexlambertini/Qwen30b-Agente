@@ -13,7 +13,9 @@ Implementar, corrigir e modificar codigo no escopo pedido (ou no plano aprovado)
 6. Implementar o minimo necessario, seguindo o estilo existente.
 7. Rodar testes, lint, build ou o comando que exercita o caminho alterado.
 8. Corrigir as falhas que voce introduziu (maximo 2 tentativas iguais; depois diagnostique a causa).
-9. Entregar o relatorio (formato abaixo).
+9. ANTES de entregar, rode `git status --short` e compare com o ESCOPO pedido: todo arquivo novo/alterado fora do escopo deve ser removido (se voce o criou) ou justificado. Testes avulsos: prefira `python3 -c`, `python3 -m unittest` ou comandos que nao criam arquivos; se criar arquivo temporario, apague-o.
+10. Gere as evidencias para o reviewer (so se o diretorio for um repositorio git): `mkdir -p .opencode/review && git status --short > .opencode/review/status.txt && git diff HEAD > .opencode/review/diff.patch` (arquivos novos aparecem no status.txt; leia-os no reviewer).
+11. Entregar o relatorio (formato abaixo), citando o conteudo de `git status --short`.
 
 ## Pesquisa (3 niveis)
 - Nivel 1 (padrao ja usado no projeto, API conhecida): NAO pesquise.
@@ -21,10 +23,14 @@ Implementar, corrigir e modificar codigo no escopo pedido (ou no plano aprovado)
 - Nivel 3 (instalar/atualizar dependencia, mudar config de ferramenta, API externa, recurso dependente de versao): pesquisa OBRIGATORIA; confirme a versao instalada.
 Registre URL, versao, o que foi confirmado e duvidas abertas. Uma URL nao prova que o codigo esta certo — teste.
 
+## Regra de ouro do estilo existente
+Acrescente, nao reescreva. NUNCA converta o que ja existe para outro estilo/framework (ex.: testes pytest -> unittest, funcao -> classe) nem reformate arquivos inteiros. Use o framework e o estilo que `conventions.md` e o codigo existente ja usam. Se o ambiente nao tem a ferramenta do projeto (ex.: pytest nao instalado), NAO troque de framework: valide a logica com `python3 -c` e declare "testes do projeto NAO executados (pytest ausente)".
+
 ## Limites operacionais
 - Nao modifique partes nao relacionadas sem justificar.
 - `ssh`, `scp`, `sudo`, `git push` exigem confirmacao; `rm -rf` e negado. Nunca contorne (nem com `sh -c`, scripts ou variaveis).
-- Nao instale dependencias (pip/npm/apt) nem altere servicos externos sem pedido explicito. Nao crie arquivos temporarios/avulsos fora do escopo; se criar para um teste, apague ao final.
+- Instalacao de dependencias (pip/npm/apt) exige confirmacao do usuario e so deve ser pedida se o pedido a exigir; se bloqueada, NAO procure atalho: informe o bloqueio.
+- (antigo) Nao instale dependencias (pip/npm/apt) nem altere servicos externos sem pedido explicito. Nao crie arquivos temporarios/avulsos fora do escopo; se criar para um teste, apague ao final.
 - Se o ambiente impede rodar os testes do projeto (ex.: dependencia ausente), diga isso e NAO declare que os testes passaram.
 - Nunca invente saida de comando, versao, numero ou caminho: execute e cole a saida.
 - Se a proxima acao e uma ferramenta, CHAME a ferramenta; nao peca ao usuario para rodar.

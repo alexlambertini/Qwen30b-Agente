@@ -2,7 +2,7 @@
 # Instalador do ambiente de agentes OpenCode (Qwen3-Coder-30B) -- instala SOMENTE configuracao.
 # O modelo roda no servidor remoto; aqui so ligamos o OpenCode a ele.
 #
-#   curl -fsSL https://raw.githubusercontent.com/alexlambertini/Qwen30b-Agente/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/alexlambertini/Qwen30b-Agente/main/install.sh | bash   (so pede a API key)
 #   ... | bash -s -- --url https://ia.lambertini.com.br/v1 --key SUA_CHAVE --searxng http://127.0.0.1:8888
 set -euo pipefail
 
@@ -13,6 +13,7 @@ KEY="${QWEN_API_KEY:-}"
 SEARX="${QWEN_SEARXNG_URL:-}"
 CONF="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 YES=0
+INSTALL_OC=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -21,6 +22,7 @@ while [ $# -gt 0 ]; do
     --searxng) SEARX="$2"; shift 2;;
     --dir) CONF="$2"; shift 2;;
     --yes|-y) YES=1; shift;;
+    --install-opencode) INSTALL_OC=1; shift;;
     -h|--help) sed -n '2,7p' "$0" 2>/dev/null || true; exit 0;;
     *) echo "Opcao desconhecida: $1" >&2; exit 2;;
   esac
@@ -41,18 +43,11 @@ ask() { # ask VAR "pergunta" [silencioso]
 
 need curl; need tar
 
-# --- 1. Parametros -----------------------------------------------------------
-if [ -z "${QWEN_BASE_URL:-}" ] && [ "$URL" = "https://ia.lambertini.com.br/v1" ] && [ "$YES" = 0 ] && [ -r /dev/tty ]; then
-  ask in "Endereco do servidor [$URL]: "; [ -n "$in" ] && URL="$in"
-fi
+# --- 1. Parametros (so a API key e obrigatoria) ------------------------------
 URL="${URL%/}"
 case "$URL" in http://*|https://*) ;; *) die "URL invalida: $URL (use http(s)://.../v1)";; esac
-[ -n "$KEY" ] || ask KEY "API key do servidor (nao aparece na tela): " silent
+[ -n "$KEY" ] || ask KEY "API key do servidor Qwen (nao aparece na tela): " silent
 [ -n "$KEY" ] || die "API key vazia."
-
-if [ -z "$SEARX" ] && [ "$YES" = 0 ] && [ -r /dev/tty ]; then
-  ask SEARX "URL do SearXNG para pesquisa web (ENTER para pular): "
-fi
 
 # --- 2. Validar o servidor (nao grava nada antes disso) -----------------------
 say "Testando $URL/models ..."
@@ -70,7 +65,12 @@ if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "$(dirname "${BASH_SOURCE[0]}")/template
 else
   TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
   say "Baixando templates de github.com/$REPO ($BRANCH) ..."
-  curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" | tar -xz -C "$TMP" --strip-components=1
+  if [ -n "${QWEN_GITHUB_TOKEN:-}" ]; then
+    curl -fsSL -H "Authorization: Bearer $QWEN_GITHUB_TOKEN" "https://api.github.com/repos/$REPO/tarball/$BRANCH" | tar -xz -C "$TMP" --strip-components=1
+  else
+    curl -fsSL "https://github.com/$REPO/archive/refs/heads/$BRANCH.tar.gz" | tar -xz -C "$TMP" --strip-components=1 \
+      || die "Falha ao baixar o repositorio (se ele for privado, torne-o publico ou exporte QWEN_GITHUB_TOKEN)."
+  fi
   SRC="$TMP"
 fi
 [ -f "$SRC/templates/opencode.json.tpl" ] || die "Templates nao encontrados em $SRC"
@@ -126,9 +126,14 @@ chmod +x "$BIN/qwen-agente-init"
 if command -v python3 >/dev/null 2>&1; then python3 -c "import json;json.load(open('$CONF/opencode.json'))" && say "opencode.json valido."; fi
 if command -v opencode >/dev/null 2>&1; then say "OpenCode encontrado: $(opencode --version 2>/dev/null | head -1)"
 elif [ -x "$HOME/.opencode/bin/opencode" ]; then say "OpenCode encontrado: $("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1) (em ~/.opencode/bin)"
-else warn "OpenCode nao esta instalado/no PATH. Este instalador so cria a configuracao; instale o OpenCode a parte."; fi
+else
+  if [ "$INSTALL_OC" = 1 ]; then say "Instalando OpenCode (instalador oficial https://opencode.ai/v2/install) ..."; curl -fsSL https://opencode.ai/v2/install | bash
+  else warn "OpenCode nao encontrado no PATH. Este instalador so cria a configuracao; rode de novo com --install-opencode para instala-lo."; fi
+fi
 
 say "Pronto. Configuracao em $CONF"
-echo "  Agentes: build (padrao), plan (somente leitura), reviewer (sem editar/Bash), explore (somente leitura)"
+echo "  Agentes : build (padrao), plan (somente leitura), reviewer (sem editar/Bash), explore (somente leitura)"
+echo "  Workflow: /feature <demanda> -> (voce aprova) -> /implement -> /review <escopo>   |   /memoria  (cria .opencode/memory do projeto)"
+echo "  Pesquisa: websearch + webfetch nativos e Context7 (docs de bibliotecas) ja habilitados."
 echo "  Modelo : qwen/qwen3-coder-30b-a3b @ $URL"
 echo "  Memoria de projeto: rode 'qwen-agente-init' na raiz do projeto (adicione $BIN ao PATH se preciso)."
