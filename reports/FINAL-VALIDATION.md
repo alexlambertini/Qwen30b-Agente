@@ -26,7 +26,14 @@ Nao criados: Scout (nao existe), Architect/Debugger/Tester/Researcher (ver `05`)
 | 7 Agentes especializados | nenhum criado, justificado (`05`) |
 | 8 Checklist | `todowrite` NAO exposto ao modelo -> checklist em `tasks/*.md`. Nativo: NOT TESTED/indisponivel |
 | 9 Cenarios | A PASS (plan investigou, estruturou, nao alterou; 1a vez ignorou memoria -> corrigido com `instructions`) · B PASS parcial (implementou e testou, mas **violou escopo**: 3 arquivos extras + tentou `pip install`) · C PASS parcial (reviewer nao editou/nao rodou bash e apontou os arquivos fora do escopo, mas com severidades ruins e sem obter `git diff` real) · D PASS · E PASS |
-| Modulo ferramentas | inventario + tabela feitos (`06`); **nada instalado, aguardando autorizacao** |
+| Modulo ferramentas | Context7 instalado e testado (contexto +0); LSP/Docker/Semgrep/Playwright/GitHub MCP nao instalados (exigem dependencias locais) (`06`) |
+
+## Atualizacao final (rodada de correcao)
+- Instalador: so pede a API key; baixa do GitHub (testado com token, repo privado); instala agentes, permissoes, prompts, memoria-modelo, Context7 e comandos `/feature /implement /review /memoria` (registro dos 4 comandos: PASS via API; execucao ponta a ponta no TUI: NOT TESTED).
+- Confirmacao para instalar dependencias (`pip/npm/apt...` = ask): PASS (`permission requested: shell (pip install requests)`).
+- Cenario B (re-teste): Build ficou no escopo, manteve pytest, sem arquivos extras, gerou `status.txt`/`diff.patch`: PASS.
+- Cenario C (re-teste): Reviewer leu o diff gerado; com prompt mecanico, marcou `NAO` na regra do pytest (caso unittest) e nao gerou falsos alarmes no caso correto: PASS parcial — o parecer final do caso ruim saiu "APROVADO COM RESSALVAS" quando deveria ser REPROVADO (erro do modelo, nao de permissao).
+- Alucinacao ao ler arquivo (T5): REGRA 0 + temperatura 0: plan 5/5, reviewer 3/3, build 3/3 (antes ~50% de falha no plan). Suite de permissoes final (instalacao via GitHub): 17 PASS + T5 oscilante antes do ajuste.
 
 ## Falhas conhecidas / limitacoes
 - KI-001: o 30B-A3B ignora/inventa as vezes (Plan inventou conteudo de arquivo sem chamar `read`; Build criou arquivos fora do escopo; Reviewer classificou mal severidades). Mitigacao: permissoes reais, regras no prompt, revisao humana.

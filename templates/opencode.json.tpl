@@ -38,13 +38,13 @@
     "build": {
       "mode": "primary",
       "description": "Executa o desenvolvimento: le, edita, cria arquivos e roda testes.",
-      "temperature": 0.3,
+      "temperature": 0.1,
       "prompt": "{file:./prompts/build.md}"
     },
     "plan": {
       "mode": "primary",
       "description": "Investiga e planeja. Somente leitura.",
-      "temperature": 0.3,
+      "temperature": 0,
       "prompt": "{file:./prompts/plan.md}",
       "permission": {
         "edit": "deny",

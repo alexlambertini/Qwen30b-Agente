@@ -14,6 +14,13 @@ curl -fsSL https://raw.githubusercontent.com/alexlambertini/Qwen30b-Agente/main/
 ```
 A chave e testada no servidor antes de gravar; a config anterior vai para `~/.config/opencode/backup-AAAAMMDD-HHMMSS/`. O `opencode.json` fica com permissao 600. A chave nunca esta no repositorio.
 
+## Pre-requisitos do usuario
+Apenas: **OpenCode** instalado e acesso ao servidor do **Qwen** (a API key). Nada de Node, Docker ou Python e exigido pelo instalador (Python so e usado se existir). Sem OpenCode: `... | bash -s -- --install-opencode`.
+
+## Workflow pronto (comandos)
+`/feature <demanda>` (plan: investiga e planeja, pede aprovacao) -> `/implement` (build: executa o plano aprovado e grava `.opencode/review/status.txt` + `diff.patch`) -> `/review <escopo>` (reviewer: le o diff real, tabela de conformidade com `conventions.md`, parecer). `/memoria` cria/atualiza `.opencode/memory/` do projeto a partir do codigo real.
+Pesquisa: `websearch` e `webfetch` nativos + **Context7** (documentacao atualizada de bibliotecas, MCP remoto, sem instalar nada local).
+
 ## O que e instalado (`~/.config/opencode`)
 | Agente | Papel | Restricao (aplicada pelo OpenCode, nao pelo prompt) |
 |---|---|---|

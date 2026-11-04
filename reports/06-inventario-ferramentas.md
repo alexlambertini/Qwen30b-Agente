@@ -41,3 +41,16 @@ Consumo de contexto: **NAO MEDIDO** (exige instalar; sem isso qualquer numero se
 2. LSP nativo com um servidor.
 3. Estabilizar/confirmar SearXNG via MCP.
 4. Docker/Semgrep como fluxo do Build (sem nova integracao). GitHub MCP e Playwright: apenas se surgir necessidade real.
+
+
+---
+# ATUALIZACAO (autorizado pelo usuario: "pode instalar o que precisar", via instalador automatico, sem pre-requisitos alem de OpenCode + Qwen)
+
+| Ferramenta | Decisao executada | Evidencia (testes 1-7) |
+|---|---|---|
+| websearch / webfetch nativos | em uso | PASS (ver 03) |
+| **Context7** | **INSTALADO no template** como MCP remoto (`https://mcp.context7.com/mcp`, `oauth:false`): sem Node/instalacao local | (1) inicia: PASS; (2) ferramentas: `resolve-library-id` e `query-docs`; (3-4) consulta real "pytest.raises": resolveu `/pytest-dev/pytest` e devolveu doc real: PASS; (5) contexto: prompt total (input+cache) = **5.948 tokens (plan) e 6.941 (build), IDENTICO com e sem Context7** -> custo fixo ~0 (catalogo sob demanda via `execute`); (6) permissoes: acessado so por `execute`; plan/reviewer continuam sem edit/bash; (7) limites: servico de terceiros (consultas saem para fora), sem API key = limite de taxa |
+| LSP nativo | NAO instalado | requer servidores de linguagem por linguagem (pyright, tsserver...) = dependencia local que o usuario nao quer; chave `lsp` existe no schema; NOT TESTED |
+| Docker / Semgrep / Playwright | NAO instalados | exigem Docker/navegador na maquina do usuario; fora do pre-requisito "so OpenCode + Qwen" |
+| GitHub MCP | NAO instalado | pacote oficial antigo deprecado; exige token |
+| SearXNG MCP | opcional (`--searxng URL`) | busca via MCP ainda nao confirmada (03) |
