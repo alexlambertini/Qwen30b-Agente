@@ -1,0 +1,6 @@
+Adicione suporte a estoque minimo neste projeto:
+1. `Item` ganha o campo `min_stock` (int, padrao 0).
+2. `InventoryService.add_item` aceita `min_stock` opcional; `InventoryService.low_stock()` retorna a lista de itens com `quantity < min_stock`, ordenada por nome.
+3. O CLI ganha a opcao `--min` no `add` e o subcomando `low`, que imprime um nome por linha (ordem alfabetica).
+4. `remove_stock` hoje deixa o estoque negativo: deve levantar `ValueError` e NAO alterar o item nesse caso.
+Mantenha os testes existentes passando e adicione testes para o que mudou.

@@ -13,6 +13,9 @@
     "prune": true,
     "reserved": 8192
   },
+  "experimental": {
+    "todo": true
+  },
   "permission": {
     "bash": {
       "ssh *": "ask",
@@ -38,13 +41,13 @@
     "build": {
       "mode": "primary",
       "description": "Executa o desenvolvimento: le, edita, cria arquivos e roda testes.",
-      "temperature": 0.1,
+      "steps": 80,
       "prompt": "{file:./prompts/build.md}"
     },
     "plan": {
       "mode": "primary",
       "description": "Investiga e planeja. Somente leitura.",
-      "temperature": 0,
+      "steps": 40,
       "prompt": "{file:./prompts/plan.md}",
       "permission": {
         "edit": "deny",
@@ -74,7 +77,7 @@
     "reviewer": {
       "mode": "subagent",
       "description": "Revisao tecnica independente. Nao edita nem executa comandos.",
-      "temperature": 0,
+      "steps": 30,
       "prompt": "{file:./prompts/reviewer.md}",
       "permission": {
         "edit": "deny",
@@ -82,6 +85,23 @@
         "task": {
           "*": "deny",
           "explore": "allow"
+        }
+      }
+    },
+    "imagem": {
+      "mode": "subagent",
+      "description": "Gera imagens (SDXL via ComfyUI), inclusive em 4K. Use quando o usuario pedir para criar/gerar uma imagem, ilustracao, icone, banner ou wallpaper.",
+      "steps": 8,
+      "prompt": "{file:./prompts/imagem.md}",
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "deny",
+          "~/.local/bin/qwen-imagem *": "allow",
+          "qwen-imagem *": "allow"
+        },
+        "task": {
+          "*": "deny"
         }
       }
     },
@@ -121,6 +141,12 @@
           "name": "Qwen3-Coder-30B-A3B-Instruct",
           "tool_call": true,
           "reasoning": false,
+          "options": {
+            "temperature": 0.3,
+            "top_p": 0.8,
+            "top_k": 20,
+            "repeat_penalty": 1.05
+          },
           "limit": {
             "context": 98304,
             "output": 8192
@@ -137,6 +163,11 @@
     }
   },
   "commands": {
+    "imagine": {
+      "description": "Gera uma imagem com o ComfyUI (acrescente '4k' para alta resolucao)",
+      "agent": "imagem",
+      "template": "Gere a imagem: $ARGUMENTS"
+    },
     "feature": {
       "description": "Passo 1 do workflow: investigar e planejar (somente leitura)",
       "agent": "plan",

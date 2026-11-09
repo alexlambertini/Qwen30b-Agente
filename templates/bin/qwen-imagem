@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Gera uma imagem no ComfyUI (SDXL) e salva o arquivo localmente. So biblioteca padrao.
+
+  qwen-imagem "prompt em ingles" [--4k] [--formato 16:9] [--saida arquivo.png]
+
+O endereco do ComfyUI vem de $COMFYUI_URL, de ~/.config/opencode/comfyui.url ou http://127.0.0.1:8188.
+--4k: gera na resolucao nativa do SDXL e amplia 4x com um modelo de upscale (ex.: RealESRGAN_x4plus.pth
+em models/upscale_models do ComfyUI), ajustando para 3840x2160 (16:9) ou 4096 no lado maior.
+"""
+import argparse
+import json
+import os
+import random
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+FORMATOS = {  # formato: (largura nativa, altura nativa, largura 4k, altura 4k)
+    "1:1": (1024, 1024, 4096, 4096),
+    "16:9": (1344, 768, 3840, 2160),
+    "9:16": (768, 1344, 2160, 3840),
+    "4:3": (1152, 896, 4096, 3072),
+    "3:4": (896, 1152, 3072, 4096),
+}
+NEGATIVO = "blurry, low quality, lowres, jpeg artifacts, watermark, signature, text, deformed, bad anatomy, extra fingers"
+
+
+def base_url():
+    url = os.environ.get("COMFYUI_URL", "").strip()
+    if not url:
+        conf = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "opencode", "comfyui.url")
+        if os.path.exists(conf):
+            url = open(conf).read().strip()
+    return (url or "http://127.0.0.1:8188").rstrip("/")
+
+
+def http(url, data=None, timeout=30):
+    req = urllib.request.Request(url, data=json.dumps(data).encode() if data is not None else None,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def opcoes(base, node, campo):
+    spec = json.loads(http(f"{base}/object_info/{node}"))[node]["input"]["required"][campo]
+    if isinstance(spec[0], list):  # formato antigo: [[opcoes], {...}]
+        return spec[0]
+    return (spec[1] if len(spec) > 1 else {}).get("options", [])
+
+
+def escolher(lista, pedido, o_que):
+    if not lista:
+        sys.exit(f"erro: nenhum {o_que} instalado no ComfyUI")
+    for nome in lista:
+        if pedido.lower() in nome.lower():
+            return nome
+    sys.exit(f"erro: {o_que} '{pedido}' nao encontrado. Disponiveis: {', '.join(lista)}")
+
+
+def montar(args, ckpt, upscaler):
+    w, h, w4, h4 = FORMATOS[args.formato]
+    g = {
+        "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt}},
+        "2": {"class_type": "CLIPTextEncode", "inputs": {"text": args.prompt, "clip": ["1", 1]}},
+        "3": {"class_type": "CLIPTextEncode", "inputs": {"text": args.negativo, "clip": ["1", 1]}},
+        "4": {"class_type": "EmptyLatentImage", "inputs": {"width": w, "height": h, "batch_size": 1}},
+        "5": {"class_type": "KSampler", "inputs": {
+            "seed": args.seed, "steps": args.passos, "cfg": args.cfg, "sampler_name": "dpmpp_2m", "scheduler": "karras",
+            "denoise": 1.0, "model": ["1", 0], "positive": ["2", 0], "negative": ["3", 0], "latent_image": ["4", 0]}},
+        "6": {"class_type": "VAEDecode", "inputs": {"samples": ["5", 0], "vae": ["1", 2]}},
+    }
+    final = ["6", 0]
+    if args.k4:
+        g["7"] = {"class_type": "UpscaleModelLoader", "inputs": {"model_name": upscaler}}
+        g["8"] = {"class_type": "ImageUpscaleWithModel", "inputs": {"upscale_model": ["7", 0], "image": ["6", 0]}}
+        g["9"] = {"class_type": "ImageScale", "inputs": {
+            "image": ["8", 0], "upscale_method": "lanczos", "width": w4, "height": h4, "crop": "center"}}
+        final = ["9", 0]
+    g["10"] = {"class_type": "SaveImage", "inputs": {"filename_prefix": "qwen-imagem", "images": final}}
+    return g
+
+
+def main():
+    p = argparse.ArgumentParser(description="Gera imagem no ComfyUI (SDXL).")
+    p.add_argument("prompt", help="descricao da imagem (ingles funciona melhor)")
+    p.add_argument("--4k", dest="k4", action="store_true", help="amplia para 4K com modelo de upscale")
+    p.add_argument("--formato", choices=sorted(FORMATOS), default="16:9")
+    p.add_argument("--negativo", default=NEGATIVO)
+    p.add_argument("--modelo", default="RealVis", help="trecho do nome do checkpoint (padrao: RealVis; ex.: sd_xl_base)")
+    p.add_argument("--seed", type=int, default=None)
+    p.add_argument("--passos", type=int, default=28)
+    p.add_argument("--cfg", type=float, default=6.0)
+    p.add_argument("--saida", default=None, help="arquivo de saida (padrao: imagem-AAAAMMDD-HHMMSS.png)")
+    p.add_argument("--timeout", type=int, default=900)
+    args = p.parse_args()
+    if args.seed is None:
+        args.seed = random.randrange(2**32)
+    base = base_url()
+    try:
+        ckpts = opcoes(base, "CheckpointLoaderSimple", "ckpt_name")
+        ckpt = escolher(ckpts, args.modelo, "checkpoint") if any(args.modelo.lower() in c.lower() for c in ckpts) else ckpts[0]
+        upscaler = escolher(opcoes(base, "UpscaleModelLoader", "model_name"), "", "modelo de upscale (models/upscale_models)") if args.k4 else None
+        pid = json.loads(http(f"{base}/prompt", {"prompt": montar(args, ckpt, upscaler)}))["prompt_id"]
+    except urllib.error.HTTPError as e:
+        sys.exit(f"erro: ComfyUI recusou o pedido (HTTP {e.code}): {e.read().decode(errors='replace')[:400]}")
+    except (urllib.error.URLError, OSError) as e:
+        sys.exit(f"erro: ComfyUI inacessivel em {base} ({e}). Defina COMFYUI_URL.")
+    inicio = time.time()
+    while True:
+        hist = json.loads(http(f"{base}/history/{pid}")).get(pid)
+        if hist and hist.get("status", {}).get("status_str") == "error":
+            msgs = [m[1].get("exception_message", "") for m in hist["status"].get("messages", []) if m[0] == "execution_error"]
+            sys.exit(f"erro: a geracao falhou no ComfyUI: {' '.join(msgs)[:400] or 'sem detalhe'}")
+        if hist and hist.get("outputs"):
+            break
+        if time.time() - inicio > args.timeout:
+            sys.exit(f"erro: tempo esgotado ({args.timeout}s) esperando o ComfyUI")
+        time.sleep(2)
+    img = next(i for o in hist["outputs"].values() for i in o.get("images", []))
+    dados = http(f"{base}/view?" + urllib.parse.urlencode(
+        {"filename": img["filename"], "subfolder": img.get("subfolder", ""), "type": img.get("type", "output")}), timeout=120)
+    saida = args.saida or time.strftime("imagem-%Y%m%d-%H%M%S.png")
+    os.makedirs(os.path.dirname(os.path.abspath(saida)), exist_ok=True)
+    with open(saida, "wb") as f:
+        f.write(dados)
+    w, h, w4, h4 = FORMATOS[args.formato]
+    print(f"OK {os.path.abspath(saida)} ({(w4 if args.k4 else w)}x{(h4 if args.k4 else h)}, {len(dados) // 1024} KB, "
+          f"{int(time.time() - inicio)}s, modelo {ckpt}, seed {args.seed})")
+
+
+if __name__ == "__main__":
+    main()

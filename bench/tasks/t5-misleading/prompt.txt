@@ -1,0 +1,1 @@
+O teste test_report.py falha. Rode-o, ache a causa raiz e corrija o código (não o teste).

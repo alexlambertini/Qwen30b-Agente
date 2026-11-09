@@ -1,0 +1,1 @@
+Em handlers.py, alguns handlers aceitam `amount` zero ou negativo, ao contrario dos demais. Encontre TODOS os handlers com essa falha e corrija-os para validar igual aos outros (mesma excecao e mesma mensagem). Nao altere o comportamento dos handlers que ja estao corretos nem reformate o arquivo. Adicione testes cobrindo os handlers corrigidos.

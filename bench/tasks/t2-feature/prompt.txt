@@ -1,0 +1,1 @@
+Em store.py, adicione o método `total_by_category()` à classe `Store`, que retorna um dict {categoria: soma dos preços}. Adicione um teste em test_store.py seguindo o estilo existente (unittest). Não altere os outros métodos.

@@ -1,0 +1,6 @@
+Crie `ratelimit.py` com a classe `SlidingWindowLimiter(limit, window, clock=time.monotonic)`:
+- `allow(key) -> bool`: permite no maximo `limit` chamadas aceitas por `key` dentro de qualquer janela deslizante de `window` segundos. Uma chamada aceita no instante t deixa de contar quando `agora - t >= window`. Chamadas negadas NAO contam para o limite.
+- `retry_after(key) -> float`: 0.0 se uma chamada seria aceita agora; senao, quantos segundos faltam ate a proxima ser aceita.
+- `limit` e `window` devem ser > 0, senao `ValueError`.
+- Chaves sao independentes. A memoria nao pode crescer sem limite para uma chave (descarte timestamps expirados).
+Crie tambem `test_ratelimit.py` (unittest) usando um relogio falso injetado em `clock`. Rode os testes.

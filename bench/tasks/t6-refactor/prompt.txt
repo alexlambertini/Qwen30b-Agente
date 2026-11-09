@@ -1,0 +1,1 @@
+Em orders.py há lógica de desconto duplicada em `price_retail` e `price_wholesale`. Extraia para uma função auxiliar `_discounted(base, qty, tiers)` sem mudar o comportamento nem a API pública. Rode os testes antes e depois.

@@ -3,7 +3,7 @@
 # O modelo roda no servidor remoto; aqui so ligamos o OpenCode a ele.
 #
 #   curl -fsSL https://raw.githubusercontent.com/alexlambertini/Qwen30b-Agente/main/install.sh | bash   (so pede a API key)
-#   ... | bash -s -- --url https://ia.lambertini.com.br/v1 --key SUA_CHAVE --searxng http://127.0.0.1:8888
+#   ... | bash -s -- --url https://ia.lambertini.com.br/v1 --key SUA_CHAVE --searxng http://127.0.0.1:8888 --comfyui http://HOST:8188
 set -euo pipefail
 
 REPO="alexlambertini/Qwen30b-Agente"
@@ -11,6 +11,7 @@ BRANCH="${QWEN_BRANCH:-main}"
 URL="${QWEN_BASE_URL:-https://ia.lambertini.com.br/v1}"
 KEY="${QWEN_API_KEY:-}"
 SEARX="${QWEN_SEARXNG_URL:-}"
+COMFY="${QWEN_COMFYUI_URL:-}"
 CONF="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 YES=0
 INSTALL_OC=0
@@ -20,6 +21,7 @@ while [ $# -gt 0 ]; do
     --url) URL="$2"; shift 2;;
     --key) KEY="$2"; shift 2;;
     --searxng) SEARX="$2"; shift 2;;
+    --comfyui) COMFY="$2"; shift 2;;
     --dir) CONF="$2"; shift 2;;
     --yes|-y) YES=1; shift;;
     --install-opencode) INSTALL_OC=1; shift;;
@@ -112,6 +114,9 @@ chmod 600 "$CONF/opencode.json"
 
 # comando auxiliar para criar a memoria do projeto
 BIN="${HOME}/.local/bin"; mkdir -p "$BIN"
+# gerador de imagens (agente @imagem e comando /imagine); precisa de um ComfyUI acessivel
+cp "$SRC/templates/bin/qwen-imagem" "$BIN/qwen-imagem"; chmod +x "$BIN/qwen-imagem"
+if [ -n "$COMFY" ]; then printf '%s\n' "${COMFY%/}" > "$CONF/comfyui.url"; fi
 cat > "$BIN/qwen-agente-init" <<INIT
 #!/usr/bin/env bash
 # Cria .opencode/memory/ no diretorio atual a partir do template.
@@ -136,4 +141,5 @@ echo "  Agentes : build (padrao), plan (somente leitura), reviewer (sem editar/B
 echo "  Workflow: /feature <demanda> -> (voce aprova) -> /implement -> /review <escopo>   |   /memoria  (cria .opencode/memory do projeto)"
 echo "  Pesquisa: websearch + webfetch nativos e Context7 (docs de bibliotecas) ja habilitados."
 echo "  Modelo : qwen/qwen3-coder-30b-a3b @ $URL"
+echo "  Imagem : @imagem ou /imagine <descricao> [4k]  (ComfyUI: $( [ -f "$CONF/comfyui.url" ] && cat "$CONF/comfyui.url" || echo 'http://127.0.0.1:8188; mude com --comfyui URL'))"
 echo "  Memoria de projeto: rode 'qwen-agente-init' na raiz do projeto (adicione $BIN ao PATH se preciso)."

@@ -1,0 +1,1 @@
+Preciso saber qual e a versao estavel mais recente do Python (CPython) disponivel hoje e a data de lancamento dessa versao. Grave em `resposta.md`: a versao (formato 3.X.Y), a data e a URL da fonte oficial usada.

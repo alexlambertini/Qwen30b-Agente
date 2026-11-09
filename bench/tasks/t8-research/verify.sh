@@ -1,0 +1,1 @@
+test -f resposta.md && grep -Eq '3\.(1[5-9]|[2-9][0-9])\.[0-9]+' resposta.md && grep -Eq 'https?://[^ )]*python\.org' resposta.md && grep -Eiq 'websearch|webfetch|web search|web fetch|context7|search' "$LOG"

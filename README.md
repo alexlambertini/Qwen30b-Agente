@@ -19,7 +19,7 @@ Apenas: **OpenCode** instalado e acesso ao servidor do **Qwen** (a API key). Nad
 
 ## Workflow pronto (comandos)
 `/feature <demanda>` (plan: investiga e planeja, pede aprovacao) -> `/implement` (build: executa o plano aprovado e grava `.opencode/review/status.txt` + `diff.patch`) -> `/review <escopo>` (reviewer: le o diff real, tabela de conformidade com `conventions.md`, parecer). `/memoria` cria/atualiza `.opencode/memory/` do projeto a partir do codigo real.
-Pesquisa: `websearch` e `webfetch` nativos + **Context7** (documentacao atualizada de bibliotecas, MCP remoto, sem instalar nada local).
+Pesquisa **automatica** (o agente pesquisa sozinho quando o assunto depende de versao, data, API incerta ou erro desconhecido): `websearch` e `webfetch` nativos + **Context7** (documentacao atualizada de bibliotecas, MCP remoto, sem instalar nada local).
 
 ## O que e instalado (`~/.config/opencode`)
 | Agente | Papel | Restricao (aplicada pelo OpenCode, nao pelo prompt) |
@@ -33,8 +33,15 @@ Tambem: `AGENTS.md` global, `prompts/` completos (fluxo, limites, criterios de c
 
 Plan e Reviewer so podem delegar ao `explore` (delegar ao `general` foi uma brecha real, corrigida: ver `reports/02`).
 
-## Testar as permissoes
-`tests/permissions.sh` (usa o servidor de verdade). Relatorios em `reports/` (00 auditoria · 01 permissoes · 02 testes · 03 pesquisa · 04 memoria · 05 agentes · 06 inventario de ferramentas · FINAL-VALIDATION).
+## Testar
+- **Permissoes:** `tests/permissions.sh` (usa o servidor de verdade).
+- **Qualidade de programacao:** `bench/run.sh` roda 13 tarefas (bug, feature em varios arquivos, debug, refatoracao, JS assincrono, pesquisa web, convencoes) e confere cada uma com um verificador oculto. Para medir uma mudanca nos templates SEM instalar: `bench/mkconf.sh /tmp/cfg && bench/run.sh -x /tmp/cfg`. Use `-n 3` para repetir (o modelo varia entre rodadas).
+- Relatorios em `reports/` (00 auditoria · 01 permissoes · 02 testes · 03 pesquisa · 04 memoria · 05 agentes · 06 inventario de ferramentas · 07 benchmark e ajuste do modelo · FINAL-VALIDATION).
+
+## Ajuste do modelo (o que realmente chega ao servidor)
+- A `temperature` posta no agente NAO e enviada pelo OpenCode a provedores OpenAI-compativeis. O sampler fica em `provider.qwen.models.*.options` (temperature 0.3, top_p 0.8, top_k 20, repeat_penalty 1.05), que vai no corpo de cada requisicao.
+- `steps` por agente limita as iteracoes (trava de loop); `experimental.todo` expoe a lista de tarefas `todowrite`.
+- O prompt do agente SUBSTITUI o prompt padrao do OpenCode: tudo o que o modelo sabe sobre como trabalhar esta em `templates/prompts/`.
 
 ## Importante
 Neste OpenCode, um `permission: { edit: allow }` **global** e aplicado *depois* da regra de cada agente e anularia o `plan` somente leitura. Por isso o `opencode.json` aqui nao tem allow global; restricoes ficam por agente.

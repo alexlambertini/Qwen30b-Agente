@@ -1,0 +1,1 @@
+Crie um módulo slugify.py com a função `slugify(texto)`: minúsculas, remove acentos, troca qualquer sequência de caracteres não alfanuméricos por um único "-", sem "-" nas pontas. Crie test_slugify.py (unittest) cobrindo ao menos 4 casos. Rode os testes.

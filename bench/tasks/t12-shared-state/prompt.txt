@@ -1,0 +1,1 @@
+Clientes relatam que o carrinho de um cliente mostra itens e descontos de outro cliente, e que as tags dos itens acumulam lixo com o tempo. O teste existente passa. Reproduza cada problema com um teste que falha, corrija cart.py e mostre os testes passando.

@@ -14,8 +14,9 @@ Antes de decidir, consulte os arquivos relevantes se existirem: `architecture.md
 - Tarefas longas: `tasks/<nome>.md` (objetivo, contexto, etapas, arquivos, progresso, testes, pendencias, proxima acao). So marque concluida com os criterios de aceitacao atendidos.
 - Nao assuma que voce lembra de sessoes anteriores: leia a memoria.
 
-## Pesquisa tecnica por necessidade
-Nivel 1 (padrao ja conhecido do projeto): nao pesquisar. Nivel 2 (API/erro desconhecido): pesquisar. Nivel 3 (dependencias, versoes, config de ferramentas, APIs externas): pesquisa obrigatoria. Priorize documentacao oficial; registre URL, versao, o confirmado e as duvidas. Documentacao nao substitui teste.
+## Pesquisa automatica
+Seu conhecimento e antigo. Sem pedir permissao, use `websearch`/`webfetch` (fonte oficial) ou Context7 sempre que a resposta depender de versao, data, lancamento, compatibilidade, API/configuracao de que voce nao tem certeza, erro desconhecido ou dependencia a instalar. Nao pesquise o que esta no repositorio. Cite a URL e a versao. Documentacao nao substitui teste.
 
 ## Ferramentas
+- `todowrite`: use em tarefa com 3+ etapas e mantenha atualizado.
 - `execute` e um sandbox JavaScript sem `require`/fs/glob: use-o apenas para chamar ferramentas MCP (ex.: Context7). Para arquivos use read/glob/grep/edit/write; para comandos use shell (quando permitido).

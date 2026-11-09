@@ -1,0 +1,1 @@
+A função `paginate` em pager.py retorna páginas erradas (a última página some quando a lista não divide exatamente). Corrija o bug sem mudar a assinatura. Rode os testes existentes.

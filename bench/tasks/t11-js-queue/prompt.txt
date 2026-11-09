@@ -1,0 +1,1 @@
+A fila em queue.js tem problemas: `npm test` falha, e em producao a fila as vezes "trava" depois que uma tarefa rejeita (as tarefas seguintes nunca rodam). Tambem ja vimos travar quando a funcao passada lanca excecao de forma sincrona. Ache as causas, corrija queue.js e adicione testes que reproduzam cada problema. Nao adicione dependencias.

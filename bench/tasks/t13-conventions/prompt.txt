@@ -1,0 +1,1 @@
+Adicione a funcao `transfer(src, dst, amount)` em src/bank.py que move `amount` de uma conta para outra e retorna o novo saldo da origem. Transferir para a mesma conta deve ser um erro de dominio novo chamado `SameAccount`. Siga as convencoes do projeto e adicione testes.
