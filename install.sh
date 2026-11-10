@@ -97,7 +97,7 @@ fi
 mkdir -p "$CONF"
 TS="$(date +%Y%m%d-%H%M%S)"
 BK="$CONF/backup-$TS"
-for f in opencode.json AGENTS.md comfyui.url prompts/build.md prompts/plan.md prompts/reviewer.md prompts/imagem.md agents/build.md agents/plan.md agents/reviewer.md agents/explore.md; do
+for f in opencode.json AGENTS.md comfyui.url prompts/build.md prompts/plan.md prompts/reviewer.md prompts/imagem.md prompts/web.md agents/build.md agents/plan.md agents/reviewer.md agents/explore.md; do
   if [ -e "$CONF/$f" ]; then mkdir -p "$BK/$(dirname "$f")"; cp -p "$CONF/$f" "$BK/$f"; fi
 done
 [ -d "$BK" ] && say "Backup da configuracao anterior em $BK" || true
@@ -131,7 +131,7 @@ chmod 600 "$CONF/opencode.json"
 # comando auxiliar para criar a memoria do projeto
 BIN="${HOME}/.local/bin"; mkdir -p "$BIN"
 # gerador de imagens (agente @imagem e comando /imagine); precisa de um ComfyUI acessivel
-cp "$SRC/templates/bin/qwen-imagem" "$BIN/qwen-imagem"; chmod +x "$BIN/qwen-imagem"
+cp "$SRC/templates/bin/qwen-imagem" "$SRC/templates/bin/qwen-layout" "$BIN/"; chmod +x "$BIN/qwen-imagem" "$BIN/qwen-layout"
 if [ -n "$COMFY" ]; then printf '%s\n' "${COMFY%/}" > "$CONF/comfyui.url"; fi
 cat > "$BIN/qwen-agente-init" <<INIT
 #!/usr/bin/env bash
@@ -153,9 +153,10 @@ else
 fi
 
 say "Pronto. Configuracao em $CONF"
-echo "  Agentes : build (padrao), plan (somente leitura), reviewer (sem editar/Bash), explore (somente leitura)"
+echo "  Agentes : build (padrao), web (layout/front-end), plan (somente leitura), reviewer (sem editar/Bash), explore (somente leitura)"
 echo "  Workflow: /feature <demanda> -> (voce aprova) -> /implement -> /review <escopo>   |   /memoria  (cria .opencode/memory do projeto)"
 echo "  Pesquisa: websearch + webfetch nativos e Context7 (docs de bibliotecas) ja habilitados."
 echo "  Modelo : qwen/qwen3-coder-30b-a3b @ $URL"
+echo "  Web    : /web <pedido> (verifica o layout com qwen-layout; precisa de Playwright: python3 -m venv ~/pw-venv && ~/pw-venv/bin/pip install playwright && ~/pw-venv/bin/playwright install chromium)"
 echo "  Imagem : @imagem ou /imagine <descricao> [4k]  (ComfyUI: $( [ -f "$CONF/comfyui.url" ] && cat "$CONF/comfyui.url" || echo 'http://127.0.0.1:8188; mude com --comfyui URL'))"
 echo "  Memoria de projeto: rode 'qwen-agente-init' na raiz do projeto (adicione $BIN ao PATH se preciso)."

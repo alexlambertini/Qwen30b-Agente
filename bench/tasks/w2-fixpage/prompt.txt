@@ -1,0 +1,1 @@
+A pagina `index.html` (oficina mecanica) esta quebrada no celular e tem problemas de acessibilidade. Corrija o layout e a acessibilidade mantendo TODOS os textos atuais (servicos, precos, botoes) e sem adicionar bibliotecas. Valide o layout nas 3 larguras e deixe sem nenhum problema.

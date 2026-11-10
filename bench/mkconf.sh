@@ -4,7 +4,7 @@
 set -euo pipefail
 R="$(cd "$(dirname "$0")/.." && pwd)"; D="$1/opencode"
 rm -rf "$D"; mkdir -p "$D/prompts"
-cp "$R"/templates/prompts/*.md "$D/prompts/"; mkdir -p "$HOME/.local/bin"; cp "$R/templates/bin/qwen-imagem" "$HOME/.local/bin/qwen-imagem"; cp "$R/templates/AGENTS.md" "$D/"
+cp "$R"/templates/prompts/*.md "$D/prompts/"; mkdir -p "$HOME/.local/bin"; cp "$R/templates/bin/qwen-imagem" "$R/templates/bin/qwen-layout" "$HOME/.local/bin/"; cp "$R/templates/AGENTS.md" "$D/"
 Q_TPL="$R/templates/opencode.json.tpl" Q_OUT="$D/opencode.json" Q_URL="${2:-}" Q_KEY="${3:-}" python3 - <<'PY'
 import json, os
 c = json.load(open(os.environ["Q_TPL"]))

@@ -126,6 +126,12 @@
           "git blame*": "allow"
         }
       }
+    },
+    "web": {
+      "mode": "primary",
+      "description": "Especialista em layout web: HTML/CSS responsivo, acessibilidade e verificacao automatica em 3 larguras.",
+      "steps": 80,
+      "prompt": "{file:./prompts/web.md}"
     }
   },
   "provider": {
@@ -187,6 +193,11 @@
       "description": "Cria/atualiza .opencode/memory/ do projeto a partir do codigo real",
       "agent": "build",
       "template": "Crie (ou atualize, sem apagar decisoes) a memoria persistente deste projeto em .opencode/memory/, baseada SOMENTE no que voce verificar no codigo e na configuracao reais (leia README, manifestos de dependencia, estrutura de diretorios, testes). Arquivos: architecture.md (visao geral, componentes+caminhos, fluxos, dependencias com versao, como rodar/testar), conventions.md (padroes de codigo, diretorios, nomes, estrategia de testes com comando, regras especificas; liste cada regra numerada e verificavel), known-issues.md (tabela de problemas reais encontrados, com evidencia), decisions/ e tasks/ (crie com um arquivo _TEMPLATE.md simples se nao existirem). Seja curto e factual; marque 'Suposicao' o que nao verificou. Mostre ao final a lista de arquivos criados. Contexto adicional do usuario: $ARGUMENTS"
+    },
+    "web": {
+      "description": "Cria/ajusta uma pagina web responsiva e verifica o layout",
+      "agent": "web",
+      "template": "$ARGUMENTS"
     }
   }
 }

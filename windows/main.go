@@ -115,7 +115,7 @@ func main() {
 
 	// backup
 	bk := filepath.Join(conf, "backup-"+time.Now().Format("20060102-150405"))
-	for _, f := range []string{"opencode.json", "AGENTS.md", "comfyui.url", "prompts/build.md", "prompts/plan.md", "prompts/reviewer.md", "prompts/imagem.md"} {
+	for _, f := range []string{"opencode.json", "AGENTS.md", "comfyui.url", "prompts/build.md", "prompts/plan.md", "prompts/reviewer.md", "prompts/imagem.md", "prompts/web.md"} {
 		copyFile(filepath.Join(conf, f), filepath.Join(bk, f), 0o600)
 	}
 	if _, err := os.Stat(bk); err == nil {
@@ -155,12 +155,13 @@ func main() {
 	}
 	// qwen-imagem.cmd (o script e Python): chama o python do Windows
 	os.WriteFile(filepath.Join(bin, "qwen-imagem.cmd"), []byte("@echo off\r\npython \"%~dp0qwen-imagem\" %*\r\n"), 0o644)
+	os.WriteFile(filepath.Join(bin, "qwen-layout.cmd"), []byte("@echo off\r\npython \"%~dp0qwen-layout\" %*\r\n"), 0o644)
 	// bin no PATH do usuario
 	ps := `$b='` + bin + `';$p=[Environment]::GetEnvironmentVariable('Path','User');if(($p -split ';') -notcontains $b){[Environment]::SetEnvironmentVariable('Path',($p.TrimEnd(';')+';'+$b),'User')}`
 	exec.Command("powershell", "-NoProfile", "-Command", ps).Run()
 
 	say("Pronto. Configuracao em %s", conf)
-	fmt.Println("  Agentes : build (padrao), plan, reviewer, explore, imagem")
+	fmt.Println("  Agentes : build (padrao), web, plan, reviewer, explore, imagem")
 	fmt.Println("  Workflow: /feature -> /implement -> /review   |   /memoria   |   /imagine <descricao> [4k]")
 	if _, err := exec.LookPath("opencode"); err != nil {
 		fmt.Println("  Falta o OpenCode: instale em https://opencode.ai e abra um terminal novo.")

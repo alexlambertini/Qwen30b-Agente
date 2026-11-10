@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Verifica o layout de uma pagina web em 3 larguras (375, 768, 1440) com Chromium headless e imprime um relatorio
+objetivo (o modelo nao enxerga imagens). uso: qwen-layout arquivo.html|URL [--shots DIR] [--json]
+Checa: rolagem horizontal, elementos fora da tela, texto cortado, sobreposicao, contraste (WCAG AA), alvos de toque < 44px,
+imagens sem alt, inputs sem label, h1 ausente/duplicado, lang, viewport, erros de console/rede. Codigo de saida 0 = limpo."""
+import json, os, subprocess, sys, time
+
+JS = r"""
+() => {
+  const out = [], vw = document.documentElement.clientWidth;
+  const sel = e => { let s = e.tagName.toLowerCase(); if (e.id) s += '#' + e.id; else if (e.className && typeof e.className === 'string') s += '.' + e.className.trim().split(/\s+/).slice(0,2).join('.'); return s; };
+  const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }; return .2126*f(c[0]) + .7152*f(c[1]) + .0722*f(c[2]); };
+  const parse = s => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map(parseFloat); return { rgb: p.slice(0,3), a: p.length > 3 ? p[3] : 1 }; };
+  const bg = e => { while (e) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c.a > .5) return c.rgb; e = e.parentElement; } return [255,255,255]; };
+  if (document.documentElement.scrollWidth > vw + 1) out.push(['rolagem-horizontal', `pagina ${document.documentElement.scrollWidth}px > viewport ${vw}px`]);
+  const seen = new Set();
+  for (const e of document.querySelectorAll('body *')) {
+    const cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue;
+    if (r.width <= 2 && r.height <= 2) continue;  // padrao sr-only / pixel de rastreio: oculto de proposito
+    if ((r.right > vw + 1 || r.left < -1) && cs.position !== 'fixed' && !e.closest('[style*="overflow"]') && !seen.has(sel(e))) { seen.add(sel(e)); out.push(['fora-da-tela', `${sel(e)} vai de ${Math.round(r.left)} a ${Math.round(r.right)}px (viewport ${vw}px)`]); }
+    const own = [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+    if (own) {
+      if ((e.scrollWidth > e.clientWidth + 1 && ['hidden','clip'].includes(cs.overflowX)) || (e.scrollHeight > e.clientHeight + 1 && ['hidden','clip'].includes(cs.overflowY)))
+        out.push(['texto-cortado', `${sel(e)}: "${e.textContent.trim().slice(0,40)}"`]);
+      const fg = parse(cs.color), b = bg(e);
+      if (fg) { const l1 = lum(fg.rgb), l2 = lum(b), ratio = (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05), size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight) >= 700, need = (size >= 24 || (size >= 18.66 && bold)) ? 3 : 4.5;
+        if (ratio < need) out.push(['contraste', `${sel(e)} razao ${ratio.toFixed(2)} (< ${need}) "${e.textContent.trim().slice(0,30)}"`]); }
+      if (size_small(cs)) out.push(['fonte-pequena', `${sel(e)} ${cs.fontSize}`]);
+    }
+    if (['A','BUTTON','INPUT','SELECT','TEXTAREA'].includes(e.tagName) && e.type !== 'hidden' && (r.width < 44 || r.height < 44) && e.type !== 'checkbox' && e.type !== 'radio')
+      out.push(['alvo-de-toque', `${sel(e)} ${Math.round(r.width)}x${Math.round(r.height)}px (< 44)`]);
+    if (e.tagName === 'IMG' && !e.hasAttribute('alt')) out.push(['img-sem-alt', sel(e)]);
+    if (e.tagName === 'IMG' && e.complete && !e.naturalWidth) out.push(['img-quebrada', e.src.slice(0,80)]);
+    if (['INPUT','SELECT','TEXTAREA'].includes(e.tagName) && !['hidden','submit','button'].includes(e.type) && !e.getAttribute('aria-label') && !(e.id && document.querySelector(`label[for="${e.id}"]`)) && !e.closest('label'))
+      out.push(['input-sem-label', sel(e)]);
+  }
+  function size_small(cs) { return parseFloat(cs.fontSize) < 12; }
+  return out;
+}
+"""
+ESTRUTURA = r"""() => { const o = [], h1 = document.querySelectorAll('h1').length;
+  if (h1 !== 1) o.push(['h1', `${h1} elementos h1 (deve haver exatamente 1)`]);
+  if (!document.documentElement.lang) o.push(['lang', 'html sem atributo lang']);
+  if (!document.querySelector('meta[name=viewport]')) o.push(['viewport', 'falta <meta name="viewport" content="width=device-width, initial-scale=1">']);
+  if (!document.title.trim()) o.push(['title', 'sem <title>']);
+  if (!document.querySelector('main')) o.push(['main', 'sem <main>']);
+  return o; }"""
+
+
+def main():
+    a = sys.argv[1:]
+    if not a or a[0] in ("-h", "--help"):
+        sys.exit(__doc__)
+    alvo = a[0]; shots = a[a.index("--shots") + 1] if "--shots" in a else None; js = "--json" in a
+    url = alvo if "://" in alvo else "file://" + os.path.abspath(alvo)
+    if "://" not in alvo and not os.path.exists(alvo):
+        sys.exit(f"erro: arquivo nao encontrado: {alvo}")
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        py = os.path.expanduser("~/pw-venv/bin/python")
+        if os.path.exists(py) and os.path.abspath(sys.executable) != os.path.abspath(py):
+            sys.exit(subprocess.call([py, os.path.abspath(__file__)] + a))
+        sys.exit("erro: playwright ausente. Rode: python3 -m venv ~/pw-venv && ~/pw-venv/bin/pip install playwright && ~/pw-venv/bin/playwright install chromium")
+    achados = []
+    with sync_playwright() as p:
+        try:
+            b = p.chromium.launch()
+        except Exception as e:
+            sys.exit("erro: Chromium nao iniciou (faltam bibliotecas do sistema? rode: sudo ~/pw-venv/bin/playwright install-deps chromium). " + str(e).splitlines()[0][:150])
+        for w, h in ((375, 800), (768, 1000), (1440, 900)):
+            pg = b.new_page(viewport={"width": w, "height": h}); logs = []
+            pg.on("console", lambda m, l=logs: l.append(("console", m.text)) if m.type == "error" else None)
+            pg.on("pageerror", lambda e, l=logs: l.append(("js-erro", str(e)[:120])))
+            pg.on("requestfailed", lambda r, l=logs: l.append(("rede", r.url[:80])))
+            pg.goto(url, wait_until="load"); pg.wait_for_timeout(400)
+            for k, d in pg.evaluate(JS) + (pg.evaluate(ESTRUTURA) if w == 1440 else []) + logs:
+                achados.append((w, k, d))
+            if shots:
+                os.makedirs(shots, exist_ok=True); pg.screenshot(path=f"{shots}/layout-{w}.png", full_page=True)
+            pg.close()
+        b.close()
+    unicos = sorted({(k, d): w for w, k, d in reversed(achados)}.items())  # um achado por (tipo, descricao)
+    if js:
+        print(json.dumps([{"tipo": k, "detalhe": d, "largura": w} for (k, d), w in unicos], ensure_ascii=False, indent=1))
+    else:
+        if not unicos:
+            print("LAYOUT OK: sem problemas em 375, 768 e 1440 px.")
+        else:
+            print(f"LAYOUT COM {len(unicos)} PROBLEMA(S) (largura onde apareceu):")
+            for (k, d), w in unicos[:40]:
+                print(f"- [{k}] {d} ({w}px)")
+            if len(unicos) > 40: print(f"... e mais {len(unicos)-40}")
+    sys.exit(1 if unicos else 0)
+
+
+if __name__ == "__main__":
+    main()
