@@ -45,3 +45,8 @@ Plan e Reviewer so podem delegar ao `explore` (delegar ao `general` foi uma brec
 
 ## Importante
 Neste OpenCode, um `permission: { edit: allow }` **global** e aplicado *depois* da regra de cada agente e anularia o `plan` somente leitura. Por isso o `opencode.json` aqui nao tem allow global; restricoes ficam por agente.
+
+## Atualizar / instalar no Windows
+
+- **Linux/macOS:** rodar o `install.sh` de novo **atualiza** a instalacao existente: guarda o que havia em `~/.config/opencode/backup-DATA`, mantem URL, chave e ComfyUI que voce nao informar e substitui prompts, agentes e comandos pelos novos. Para trocar um valor, informe-o (`--url`, `--key`, `--comfyui`).
+- **Windows:** baixe `dist/qwen-agente-setup.exe` e de duplo clique (pergunta URL, chave e ComfyUI) ou rode `qwen-agente-setup.exe --key SUA_CHAVE --comfyui http://100.94.64.97:8188`. Tambem atualiza sem perguntar de novo, com backup. A config fica em `%USERPROFILE%\.config\opencode`. Precisa do OpenCode e, para `/imagine`, do Python 3. Para regerar o exe: `windows/build.sh` (requer Go).

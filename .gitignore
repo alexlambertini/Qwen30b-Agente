@@ -2,3 +2,4 @@ opencode.json
 *.bak*
 backup-*/
 .env
+windows/payload/

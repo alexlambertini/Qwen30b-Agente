@@ -14,11 +14,12 @@ SEARX="${QWEN_SEARXNG_URL:-}"
 COMFY="${QWEN_COMFYUI_URL:-}"
 CONF="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 YES=0
+URL_SET=0
 INSTALL_OC=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --url) URL="$2"; shift 2;;
+    --url) URL="$2"; URL_SET=1; shift 2;;
     --key) KEY="$2"; shift 2;;
     --searxng) SEARX="$2"; shift 2;;
     --comfyui) COMFY="$2"; shift 2;;
@@ -44,6 +45,21 @@ ask() { # ask VAR "pergunta" [silencioso]
 }
 
 need curl; need tar
+
+# --- 0. Instalacao existente: reaproveita URL/chave/ComfyUI que nao forem informados (rodar de novo ATUALIZA) ---
+if [ -f "$CONF/opencode.json" ] && command -v python3 >/dev/null 2>&1; then
+  OLD="$(python3 - "$CONF/opencode.json" <<'PY' 2>/dev/null || true
+import json, sys
+o = json.load(open(sys.argv[1]))["provider"]["qwen"]["options"]
+print(o.get("baseURL", "")); print(o.get("apiKey", ""))
+PY
+)"
+  OLD_URL="$(printf '%s\n' "$OLD" | sed -n 1p)"; OLD_KEY="$(printf '%s\n' "$OLD" | sed -n 2p)"
+  [ -n "${QWEN_BASE_URL:-}" ] || [ "$URL_SET" = 1 ] || { [ -z "$OLD_URL" ] || URL="$OLD_URL"; }
+  [ -n "$KEY" ] || KEY="$OLD_KEY"
+  [ -n "$COMFY" ] || { [ ! -f "$CONF/comfyui.url" ] || COMFY="$(cat "$CONF/comfyui.url")"; }
+  say "Instalacao existente em $CONF: sera ATUALIZADA (backup automatico; URL/chave mantidas se voce nao informar outras)."
+fi
 
 # --- 1. Parametros (so a API key e obrigatoria) ------------------------------
 URL="${URL%/}"
@@ -81,8 +97,8 @@ fi
 mkdir -p "$CONF"
 TS="$(date +%Y%m%d-%H%M%S)"
 BK="$CONF/backup-$TS"
-for f in opencode.json AGENTS.md agents/build.md agents/plan.md agents/reviewer.md agents/explore.md; do
-  if [ -e "$CONF/$f" ]; then mkdir -p "$BK/$(dirname "$f")"; mv "$CONF/$f" "$BK/$f"; fi
+for f in opencode.json AGENTS.md comfyui.url prompts/build.md prompts/plan.md prompts/reviewer.md prompts/imagem.md agents/build.md agents/plan.md agents/reviewer.md agents/explore.md; do
+  if [ -e "$CONF/$f" ]; then mkdir -p "$BK/$(dirname "$f")"; cp -p "$CONF/$f" "$BK/$f"; fi
 done
 [ -d "$BK" ] && say "Backup da configuracao anterior em $BK" || true
 
