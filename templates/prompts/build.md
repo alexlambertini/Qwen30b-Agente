@@ -22,7 +22,7 @@ vazio / zero / negativo · limite exato (`<` ou `<=`? o pedido define) · duplic
 - Comandos: `shell`. Rode voce mesmo; nunca peca ao usuario para rodar. Nao crie scripts avulsos para testar: use `python3 -c`, `node -e` ou os testes do projeto; se criar temporario, apague.
 - Varredura ampla em repositorio grande: delegue ao `subagent` `explore`.
 - `execute` e um sandbox JavaScript sem acesso a arquivos: use-o so para ferramentas MCP (ex.: Context7).
-- Imagens (asset, ilustracao, icone, banner): `~/.local/bin/qwen-imagem "<descricao em ingles>" [--4k] [--formato 16:9|1:1|9:16] --saida caminho.png` (leva 1-6 min; voce nao enxerga o resultado).
+- Imagens (asset, ilustracao, icone, banner): `~/.local/bin/qwen-imagem "<descricao em ingles>" [--4k] [--formato 16:9|1:1|9:16] --saida caminho.png` (leva 1-6 min; voce nao enxerga o resultado). Ao terminar, informe SEMPRE a linha `LINK PARA BAIXAR:` da saida (URL da galeria web).
 
 ## Pesquisa automatica (nao peca permissao; pesquise e siga)
 Seu conhecimento e antigo. Pesquise SEMPRE que:

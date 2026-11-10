@@ -3,6 +3,7 @@
 
   qwen-imagem "prompt em ingles" [--4k] [--formato 16:9] [--saida arquivo.png]
 
+A imagem fica na galeria web do servidor e o script imprime "LINK PARA BAIXAR".
 O endereco do ComfyUI vem de $COMFYUI_URL, de ~/.config/opencode/comfyui.url ou http://127.0.0.1:8188.
 --4k: gera na resolucao nativa do SDXL e amplia 4x com um modelo de upscale (ex.: RealESRGAN_x4plus.pth
 em models/upscale_models do ComfyUI), ajustando para 3840x2160 (16:9) ou 4096 no lado maior.
@@ -34,6 +35,21 @@ def base_url():
         if os.path.exists(conf):
             url = open(conf).read().strip()
     return (url or "http://127.0.0.1:8188").rstrip("/")
+
+
+def galeria_url(base):
+    """Endereco web da galeria do ComfyUI (serve a pasta output). $QWEN_GALERIA_URL, ~/.config/opencode/galeria.url
+    ou o mesmo host do ComfyUI na porta 8189."""
+    url = os.environ.get("QWEN_GALERIA_URL", "").strip()
+    if not url:
+        conf = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "opencode", "galeria.url")
+        if os.path.exists(conf):
+            url = open(conf).read().strip()
+    if not url:
+        p = urllib.parse.urlsplit(base)
+        host = p.hostname or "127.0.0.1"
+        url = f"{p.scheme}://{host}:8189"
+    return url.rstrip("/")
 
 
 def http(url, data=None, timeout=30):
@@ -109,7 +125,10 @@ def main():
         sys.exit(f"erro: ComfyUI inacessivel em {base} ({e}). Defina COMFYUI_URL.")
     inicio = time.time()
     while True:
-        hist = json.loads(http(f"{base}/history/{pid}")).get(pid)
+        try:
+            hist = json.loads(http(f"{base}/history/{pid}", timeout=60)).get(pid)
+        except (TimeoutError, urllib.error.URLError, OSError):
+            hist = None  # ComfyUI ocupado (carregando modelo): tenta de novo ate o --timeout
         if hist and hist.get("status", {}).get("status_str") == "error":
             msgs = [m[1].get("exception_message", "") for m in hist["status"].get("messages", []) if m[0] == "execution_error"]
             sys.exit(f"erro: a geracao falhou no ComfyUI: {' '.join(msgs)[:400] or 'sem detalhe'}")
@@ -126,6 +145,8 @@ def main():
     with open(saida, "wb") as f:
         f.write(dados)
     w, h, w4, h4 = FORMATOS[args.formato]
+    link = galeria_url(base) + "/" + "/".join(urllib.parse.quote(x) for x in [img.get("subfolder", ""), img["filename"]] if x)
+    print(f"LINK PARA BAIXAR: {link}")
     print(f"OK {os.path.abspath(saida)} ({(w4 if args.k4 else w)}x{(h4 if args.k4 else h)}, {len(dados) // 1024} KB, "
           f"{int(time.time() - inicio)}s, modelo {ckpt}, seed {args.seed})")
 
