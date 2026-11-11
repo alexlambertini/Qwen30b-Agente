@@ -20,6 +20,7 @@ O instalador copia **somente configuracao** (agentes, prompts, comandos, scripts
 13. [Seguranca e permissoes](#13-seguranca-e-permissoes)
 14. [Problemas comuns](#14-problemas-comuns)
 15. [Estrutura do repositorio](#15-estrutura-do-repositorio)
+16. [Chat web (Open WebUI), agentes juridicos e migracao de servidor](#16-chat-web-open-webui-agentes-juridicos-e-migracao-de-servidor)
 
 ---
 
@@ -218,19 +219,19 @@ bench/run.sh -x /tmp/cfg -n 3 -a web w1-landing w2-fixpage w3-form   # tarefas w
 ```
 `BENCH_TIMEOUT` (padrao 300 s) e `BENCH_OUT` ajustam o limite e a pasta dos logs. Sempre use `-n 3` ou mais: o modelo varia 1 a 2 tarefas entre rodadas.
 
-Resultado (7 tarefas dificeis x 3 rodadas, mesmo modelo):
+Resultado (7 tarefas dificeis x **5 rodadas**, mesmo modelo, rodada limpa de 10/11 sem misturar versoes da config):
 | Tarefa | Config antiga | Config atual |
 |---|---|---|
-| t7 varios arquivos | 3/3 | 2/3 |
-| t8 pesquisa na web | 3/3 | 3/3 |
-| t9 limite de taxa | 2/3 | 1/3 |
-| t10 arquivo grande | 3/3 | 2/3 |
-| t11 fila assincrona (JS) | 2/3 | 2/3 |
-| t12 estado compartilhado | 2/3 | 2/3 |
-| t13 convencoes do projeto | 0/3 | **3/3** |
-| **Total** | **15/21** | **15/21** |
+| t7 varios arquivos | 4/5 | 5/5 |
+| t8 pesquisa na web | 5/5 | 4/5 |
+| t9 limite de taxa | 3/5 | 3/5 (2 estouros de 300 s) |
+| t10 arquivo grande | 5/5 | 4/5 |
+| t11 fila assincrona (JS) | 4/5 | 4/5 |
+| t12 estado compartilhado | 3/5 | 3/5 |
+| t13 convencoes do projeto | 0/5 | **5/5** |
+| **Total** | **24/35** | **28/35** |
 
-O ganho comprovado e em **t13** (funcao de modulo com type hints e convencoes: 0/3 para 3/3, 6/6 isolado) e na **pesquisa** (nao responde mais de memoria). A nota geral ficou igual dentro da variacao. 
+O ganho comprovado e em **t13** (funcao de modulo com type hints e convencoes: 0/5 para 5/5). Nas outras tarefas as duas configs empatam dentro da variacao (diferenca de 1 rodada). A config atual e mais lenta no t9. Uma rodada anterior com 3 repeticoes deu 15/21 x 15/21: com poucas rodadas a diferenca some no ruido. A falha do t10 (deixar um handler sem corrigir) continua acontecendo ~1 em 5 mesmo com a regra de "listar e conferir um a um" no prompt.
 
 Agente **web** (3 tarefas: landing page do zero, pagina quebrada, formulario acessivel): **11/11** (w1 3/3, w2 4/4, w3 4/4), todas terminando com `LAYOUT OK` no `qwen-layout`. Na primeira tentativa o resultado foi pior por causa de erros meus (prompt sem o caminho do script e verificadores estritos demais), que foram corrigidos e documentados no `reports/07`.
 
@@ -272,6 +273,44 @@ templates/
   memory/ AGENTS.md        modelo de memoria e regras globais
 bench/                     benchmark (run.sh, mkconf.sh, tasks/)
 deploy/                    chat paralelo, troca de quantizacao, testes de carga/velocidade
+  instalar-servidor.sh     sobe Open WebUI + pesquisa + imagem + nucleo juridico + agentes (tudo de uma vez)
+  backup.sh restaurar.sh   dados que nao estao no git (conversas, casos, chaves)
+  webui/ revisor/          compose do Open WebUI e servidor de ferramentas do ADVOGADO REVISIONAL
+webui/                     configurar.py (modelos, ferramentas, imagem) e prompts dos modelos do chat
+WebUI.md                   plano, registro e limitacoes da implantacao do chat web
 tests/                     testes de permissao
 reports/                   auditoria, permissoes, pesquisa, memoria, agentes, benchmark
 ```
+
+---
+
+## 16. Chat web (Open WebUI), agentes juridicos e migracao de servidor
+Um chat no navegador (estilo ChatGPT) por cima dos mesmos modelos, com login, historico, **pesquisa na web**, **imagem dentro da conversa**, anexos (PDF, Word, PDF escaneado com OCR) e os agentes do [ADVOGADO REVISIONAL](https://github.com/alexlambertini/advogado-revisional) no seletor de modelos. Plano, registro do que foi testado e limitacoes: [`WebUI.md`](WebUI.md).
+
+```bash
+deploy/instalar-servidor.sh        # no servidor; pode rodar de novo (atualiza)
+```
+Faz, em ordem: pacotes de OCR/conversao, SearXNG, Open WebUI (versao fixada em `deploy/webui/docker-compose.yml`), administrador (senha aleatoria em `~/webui/admin.txt`), servidor de ferramentas do nucleo juridico (`:8890`, servico `systemd --user`) e `webui/configurar.py` (ferramentas, Context7, subagentes, modelos do seletor, imagem pelo ComfyUI). A API key e a URL saem da config do OpenCode ja instalada; **nenhum segredo fica no repositorio**.
+
+| No seletor | Modelo | Faz |
+|---|---|---|
+| **Qwen 30B** (inicial) | 30B | geral: programacao, pesquisa na web, Context7, imagem 4K, anexos |
+| **Qwen 8B (rapido)** | 8B | chat puro, sem ferramentas (3584 tokens por conversa com 16 slots) |
+| **Advogado Revisional** | 30B | conduz a analise em 12 etapas; todo numero vem do nucleo deterministico |
+| **Revisor: Extracao / Calculo / Auditoria / Encargos / Juridico / Relatorio / Anti-alucinacao** | 30B | cada especialista isolado |
+
+Uso do juridico: escolha **Advogado Revisional**, anexe o contrato (PDF, `.docx`, `.doc` ou PDF escaneado) e peca a analise com uma referencia do caso. Os casos ficam em `~/revisor/casos/<referencia>/` no servidor. O relatorio so sai se a auditoria interna de 10 checks aprovar. E apoio tecnico: nao e parecer e nao substitui o advogado.
+
+Limites conhecidos: o 30B atende **uma resposta por vez** (fila se varias pessoas usarem juntas); imagem em 4K leva ~4 min; OCR pode errar digitos (o agente avisa para conferir no original); testes automaticos devem ir pela interface (as ferramentas do modelo sao anexadas por ela, nao pela API crua).
+
+### Migrar para outro servidor
+```bash
+# servidor antigo
+deploy/backup.sh                              # gera ~/backups/ia-backup-DATA.tgz (CONTEM chaves e dados de cliente; guarde com cuidado)
+# servidor novo (com GPU, Docker, llama.cpp e os modelos GGUF em /srv/models)
+git clone https://github.com/alexlambertini/Qwen30b-Agente && cd Qwen30b-Agente
+deploy/restaurar.sh ia-backup-DATA.tgz        # conversas, usuarios, casos, chaves e config do OpenCode
+deploy/apply-coder.sh q4 && deploy/apply-chat.sh    # servicos dos modelos (sudo)
+deploy/instalar-servidor.sh                   # todo o resto
+```
+Sem backup tambem funciona (instalacao limpa): rode `./install.sh` antes, para criar a config do OpenCode com a URL e a API key. **Nao vem do git:** os modelos GGUF (grandes demais), o ComfyUI com seus checkpoints, o tunel/proxy que publica o site (Cloudflare) e os segredos.
